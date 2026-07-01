@@ -7,9 +7,10 @@ function Favorites() {
   const { favorites } = useContext(GlobalContext);
   const [query, setQuery] = useState("");
 
-  const filteredFavorites = favorites.filter((movie)=>
-    movie.title.toLocaleLowerCase('tr').includes(query.toLocaleLowerCase('tr'))
-  );
+  const filteredFavorites = favorites.filter((movie) => {
+    if (!movie || !movie.title) return false;
+    return movie.title.toLocaleLowerCase('tr').includes(query.toLocaleLowerCase('tr'));
+  });
 
   return (
     <div className="container mx-auto px-4 pb-20">
