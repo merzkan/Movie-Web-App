@@ -11,16 +11,16 @@ function Search({onSearch}) {
     }
 
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+    }
 
-        const timer = setTimeout(() => {
-            onSearch(query); 
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [query, onSearch]); 
+    const timer = setTimeout(() => {
+        onSearch(query); 
+    }, 500);
+    return () => clearTimeout(timer);
+}, [query, onSearch]);
 
   return (
       <div className="relative w-full max-w-4xl mx-auto p-6 z-40">

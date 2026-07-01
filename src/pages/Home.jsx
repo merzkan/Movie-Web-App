@@ -1,68 +1,91 @@
+import { useEffect, useState } from "react";
 import Search from "../components/Search";
 import Hero from "../components/Hero";
 import MovieCard from "../components/Card/MovieCard";
 import api from "../services/api";
-import { useEffect, useState } from "react";
 
 function Home() {
   const [movies, setMovies] = useState([]);
+  const [params, setParams] = useState({ query: "", page: 1 }); 
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  const PopularMovie = async () => {
-    const storedMovies = localStorage.getItem("popularMovies");
-    if(storedMovies){
-      setMovies(JSON.parse(storedMovies));
-    }else{
-       try{
-        const response = await api.get("/movie/top_rated");
-        const data = response.data.results
-        setMovies(data);
-        localStorage.setItem("popularMovies", JSON.stringify(data))
-      }catch(error){
-        console.log(error);
-      }
+  const fetchMovies = async (searchQuery, page) => {
+    setLoading(true);
+    try {
+      const endpoint = searchQuery ? "/search/movie" : "/movie/top_rated";
+      const response = await api.get(endpoint, {
+        params: { query: searchQuery, page: page },
+      });
+
+      setMovies(response.data.results);
+      setTotalPages(response.data.total_pages);
+    } catch (error) {
+      console.error("Veri çekme hatası:", error);
+    } finally {
+      setLoading(false);
     }
-     
-    }
+  };
 
   useEffect(() => {
-    PopularMovie();
-  },[]);
+    fetchMovies(params.query, params.page);
+  }, [params]);
 
-  const handleSearch = async (query) => {
-    if(!query.trim()){
-      PopularMovie();
-      return;
+  const handleSearch = (newQuery) => {
+    if (params.query !== newQuery) {
+        setParams({ query: newQuery, page: 1 });
     }
-    try{
-      const response = await api.get("/search/movie",{
-        params: {query:query}
-      });
-      const searchResults = response.data.results;
-      searchResults.sort((a, b) => b.popularity - a.popularity);
-      setMovies(searchResults)
-    }catch(error){
-      console.log("Arama hatası",error);
-    }  
   };
+
+  const changePage = (newPage) => {
+    setParams(prev => ({ ...prev, page: newPage }));
+  };
+
+  useEffect(() => {
+    const targetScroll = params.page === 1 ? 0 : 500;
+    window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+  }, [params.page]);
 
   return (
     <div>
       <Hero />
       <Search onSearch={handleSearch} />
+      
       <main className="container mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-          {movies.length > 0 ? (
-            movies.map((movie) => (
+        {loading ? (
+          <p className="text-center py-10">Yükleniyor...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
+            {movies.map((movie) => (
               <MovieCard key={movie.id} movie={movie} />
-            ))
-          ) : (
-            <p className="text-center w-full text-gray-500">Film bulunamadı.</p>
-          )}
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-center items-center gap-6 py-10">
+          <button
+            disabled={params.page === 1}
+            onClick={() => changePage(params.page - 1)}
+            className="px-6 py-2 bg-[#556650] text-[#D2DCB6] rounded-xl font-semibold transition-all duration-300 hover:bg-[#3d4a3a] disabled:bg-[#a8b3a5] disabled:cursor-not-allowed shadow-md"
+          >
+            Önceki
+          </button>
+          
+          <span className="font-bold text-[#556650] bg-[#D2DCB6]/50 px-4 py-2 rounded-lg">
+            {params.page} / {totalPages > 500 ? 500 : totalPages}
+          </span>
+
+          <button
+            disabled={params.page >= totalPages || params.page >= 500}
+            onClick={() => changePage(params.page + 1)}
+            className="px-6 py-2 bg-[#556650] text-[#D2DCB6] rounded-xl font-semibold transition-all duration-300 hover:bg-[#3d4a3a] disabled:bg-[#a8b3a5] disabled:cursor-not-allowed shadow-md"
+          >
+            Sonraki
+          </button>
         </div>
       </main>
     </div>
-
-  )
+  );
 }
 
 export default Home;
